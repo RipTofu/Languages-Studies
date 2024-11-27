@@ -1,0 +1,71 @@
+import pandas as pd
+from dash import Dash, html, dcc, Input, Output
+import plotly.express as px
+
+df = pd.read_csv('save_the_bees.csv')
+
+df = df[['state', 'state_code', 'num_colonies', 'quarter', 'year']]
+df = df[(df['quarter'] == 1) & (df['state_code'] != 'US')]
+print(df)
+
+app = Dash()
+
+
+app.layout = html.Div([
+    html.H1("Mapa de abejas en EEUU, Q1", style={'text-align': 'center'}),
+    dcc.Dropdown(id="slct-quarter",
+                 options=[
+                        {"label": "Ene-Mar", "value": 1},
+                        {"label": "Abr-Jun", "value": 2},
+                        {"label": "Jul-Sep", "value": 3},
+                        {"label": "Oct-Dic", "value": 4}
+                 ],
+                 multi=False,
+                 value=1,
+                 style={"width": "40%"}),
+    dcc.Dropdown(id="slct-year",
+                 options=[
+                        {"label": "2015", "value": 2015},
+                        {"label": "2016", "value": 2016},
+                        {"label": "2017", "value": 2017},
+                        {"label": "2018", "value": 2018},
+                        {"label": "2019", "value": 2019},
+                        {"label": "2020", "value": 2020},
+                        {"label": "2021", "value": 2021},
+                        {"label": "2022", "value": 2022}
+                 ],
+                 multi=False,
+                 value=2015, style={"width": "40%", "align": 'center'}),
+    html.Br(),
+    dcc.Graph(id='mapa-bejas')
+
+])
+
+@app.callback(
+    Output('mapa-bejas', 'figure'),
+    [Input('slct-year', 'value')]
+
+)
+def actualizar_grafico(opcion):
+    print(opcion)
+    dff = df.copy()
+    dff = dff[dff["year"] == opcion]
+    print(dff)
+    fig = px.choropleth(
+        data_frame=dff,
+        locationmode='USA-states',
+        locations='state_code',
+        scope='usa',
+        color='num_colonies',
+        # Los colores varían poco si lo dejamos por defecto.
+        color_continuous_scale=[[0, 'rgb(255,247,167)'],
+                      [0.05, 'rgb(255,238,139)'],
+                      [0.1, 'rgb(255, 255, 0)'],
+                      [0.20, 'rgb(255,141,0)'],
+                      [1, 'rgb(255,116,0)']],
+        hover_data='state'
+    )
+
+    return fig
+
+app.run()
